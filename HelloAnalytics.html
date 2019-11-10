@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Hello Analytics Reporting API V4</title>
+  <meta name="google-signin-client_id" content="444402918192-qomaa36qc3gf87tu65sgcd5dfm8rtbjl.apps.googleusercontent.com">
+  <meta name="google-signin-scope" content="https://www.googleapis.com/auth/analytics.readonly">
+</head>
+<body>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+
+<div> 
+	<h1>Analytics Reporting</h1>
+	<p class="g-signin2"></p>
+</div>
+<div>
+	<h2> Enter Date Range </h2>
+	From Date: <input id="datepickerFrom" type="text">
+	To Date: <input id="datepickerTo" type="text">
+	<button id="submit" type="button">Get Reports</button>
+<div>
+
+<script>
+  // Set up Jquery UI
+  $( "#datepickerFrom" ).datepicker({
+	    dateFormat: "yy-mm-dd"
+  });
+  $( "#datepickerTo" ).datepicker({
+	    dateFormat: "yy-mm-dd"
+  });
+  $("#submit").click( () => {
+    // Replace with your view ID.
+    var VIEW_ID = '204711966';
+	
+	if(/[0-9]{4}-[0-9]{2}-[0-9]{2}/.test($("#datepickerFrom").val()) &&
+		/[0-9]{4}-[0-9]{2}-[0-9]{2}/.test($("#datepickerTo").val())){
+		// Query the API and print the results to the page.
+		gapi.client.request({
+		  path: '/v4/reports:batchGet',
+		  root: 'https://analyticsreporting.googleapis.com/',
+		  method: 'POST',
+		  body: {
+			reportRequests: [
+			  {
+				viewId: VIEW_ID,
+				dateRanges: [
+				  {
+					startDate: $("#datepickerFrom").val(),
+					endDate: $("#datepickerTo").val()
+				  }
+				],
+				dimensions: [
+					{
+						name: 'ga:hostname',
+						histogramBuckets: []
+					},
+					{
+						name: 'ga:pagePath',
+						histogramBuckets: []
+					}
+				],
+				metrics: [
+				  {
+					expression: 'ga:sessions'
+				  },
+					{
+						expression: 'ga:users'
+					},
+					{
+						expression: 'ga:newUsers'
+					},
+					{
+						expression: 'ga:sessionsPerUser'
+					},
+					{
+						expression: 'ga:bounceRate'
+					},
+					{
+						expression: 'ga:avgTimeOnPage'
+					}
+				]
+			  }
+			]
+		  }
+		}).then(displayResults, console.error.bind(console));
+	}
+	else{
+		alert("Wrong input format\n\nPlease use the calendar or enter a date using the following format: YYYY-MM-DD");
+	}
+  });
+
+  function displayResults(response) {
+    var formattedJson = JSON.stringify(response.result, null, 2);
+	exportCSVFile(
+		response.result["reports"][0]["data"],
+		"CBR" + $("#datepickerFrom").val() + "_" + $("#datepickerTo").val()
+	);
+  }
+  function flattenObject(obj){
+	var str = '';
+	if(obj === null){
+		return "";
+	}
+	else if(Array.isArray(obj)){
+		var line = '';
+	    for (var index=0; index<obj.length; index++) {
+	        line += flattenObject(obj[index]);
+	    }
+		str += line;
+	}
+	else if(typeof obj === 'object'){
+	    for (var key in obj) {
+			str += flattenObject(obj[key]);
+		}
+	}
+	else{
+		str += obj + ",";
+	}
+	return str;
+  }
+	function convertToCSV(objArray) {
+	    var array = typeof objArray != 'object' ? JSON.parse(objArray) : objArray;
+	    var str = '';
+	
+	    for (var i = 0; i < array.length; i++) {
+	        str += flattenObject(array[i]) + '\r\n';
+	    }
+	
+	    return str;
+	}
+	
+	function exportCSVFile(items, fileTitle) {
+	    // Convert Object to JSON
+	    var jsonObjectRows = JSON.stringify(items["rows"]);
+	    var jsonObjectTotals = JSON.stringify(items["totals"]);
+		var jsonObjectMin = JSON.stringify(items["minimums"]);
+		var jsonObjectMax = JSON.stringify(items["maximums"]);
+	
+		var csvRow = this.convertToCSV(jsonObjectRows);
+		var csvTot = this.convertToCSV(jsonObjectTotals);
+		var csvMin = this.convertToCSV(jsonObjectMin);
+		var csvMax = this.convertToCSV(jsonObjectMax);
+
+		var csv = "Website,Path,Sessions,Users,New Users,Sessions Per User,Bounce Rate, Average Time on Page" + '\r\n' +
+				  csvRow + '\r\n' +
+				  "Totals,," + csvTot + '\r\n' + 
+				  "Minimums,," + csvMin + '\r\n' + 
+				  "Maximums,," + csvMax + '\r\n';
+	
+	    var exportedFilenmae = fileTitle + '.csv' || 'export.csv';
+	
+	    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+	    if (navigator.msSaveBlob) { // IE 10+
+	        navigator.msSaveBlob(blob, exportedFilenmae);
+	    } else {
+	        var link = document.createElement("a");
+	        if (link.download !== undefined) { // feature detection
+	            // Browsers that support HTML5 download attribute
+	            var url = URL.createObjectURL(blob);
+	            link.setAttribute("href", url);
+	            link.setAttribute("download", exportedFilenmae);
+	            link.style.visibility = 'hidden';
+	            document.body.appendChild(link);
+	            link.click();
+	            document.body.removeChild(link);
+	        }
+	    }
+	}
+
+</script>
+
+<!-- Load the JavaScript API client and Sign-in library. -->
+<script src="https://apis.google.com/js/client:platform.js"></script>
+
+</body>
+</html>
