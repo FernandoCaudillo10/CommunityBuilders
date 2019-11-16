@@ -135,6 +135,7 @@
 	return str;
   }
 	function convertToCSV(objArray) {
+		console.log("Data being Parsed:\n", objArray);
 	    var array = typeof objArray != 'object' ? JSON.parse(objArray) : objArray;
 	    var str = '';
 	
