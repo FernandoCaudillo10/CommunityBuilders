@@ -87,7 +87,8 @@
 			  }
 			]
 		  }
-		}).then(displayResults, errorLoading)
+		}).then(displayResults, 
+	console.error.bind(console));
 	}
 	else{
 		alert("Wrong input format\n\nPlease use the calendar or enter a date using the following format: YYYY-MM-DD");
