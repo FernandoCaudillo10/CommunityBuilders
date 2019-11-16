@@ -21,6 +21,7 @@
 	From Date: <input id="datepickerFrom" type="text">
 	To Date: <input id="datepickerTo" type="text">
 	<button id="submit" type="button">Get Reports</button>
+	<h1 id="loadingText"></h1>
 <div>
 
 <script>
@@ -32,6 +33,7 @@
 	    dateFormat: "yy-mm-dd"
   });
   $("#submit").click( () => {
+	addLoading();
     // Replace with your view ID.
     var VIEW_ID = '204711966';
 	
@@ -85,19 +87,29 @@
 			  }
 			]
 		  }
-		}).then(displayResults, console.error.bind(console));
+		}).then(displayResults, errorLoading)
 	}
 	else{
 		alert("Wrong input format\n\nPlease use the calendar or enter a date using the following format: YYYY-MM-DD");
 	}
   });
-
+  function errorLoading(){
+	$("#loadingText").html("");
+	alert("Error: Check that you are signed in with the correct email, if email is correct this is an uknown error, contact developer");
+  }
+  function addLoading(){
+	$("#loadingText").html("Downloading, Please Wait...");
+  }
+  function clearLoading(){
+	$("#loadingText").html("");
+  }
   function displayResults(response) {
     var formattedJson = JSON.stringify(response.result, null, 2);
 	exportCSVFile(
 		response.result["reports"][0]["data"],
 		"CBR" + $("#datepickerFrom").val() + "_" + $("#datepickerTo").val()
 	);
+	clearLoading()
   }
   function flattenObject(obj){
 	var str = '';
